@@ -53,9 +53,6 @@ func (self *BackgroundRoutineMgr) startBackgroundFetch(refreshInterval int) {
 	self.gui.waitForIntro.Wait()
 
 	isNew := self.gui.IsNewRepo
-	if !isNew {
-		time.After(time.Second * time.Duration(refreshInterval))
-	}
 	err := self.backgroundFetch()
 	if err != nil && strings.Contains(err.Error(), "exit status 128") && isNew {
 		_ = self.gui.c.Alert(self.gui.c.Tr.NoAutomaticGitFetchTitle, self.gui.c.Tr.NoAutomaticGitFetchBody)
