@@ -190,6 +190,15 @@ func (self *CommitCommands) GetCommitMessagesFirstLine(shas []string) (string, e
 	return self.cmd.New(cmdArgs).DontLog().RunWithOutput()
 }
 
+func (self *CommitCommands) GetShasAndCommitMessagesFirstLine(shas []string) (string, error) {
+	cmdArgs := NewGitCmd("show").
+		Arg("--no-patch", "--pretty=format:%h %s").
+		Arg(shas...).
+		ToArgv()
+
+	return self.cmd.New(cmdArgs).DontLog().RunWithOutput()
+}
+
 func (self *CommitCommands) GetCommitsOneline(shas []string) (string, error) {
 	cmdArgs := NewGitCmd("show").
 		Arg("--no-patch", "--oneline").

@@ -17,3 +17,11 @@ func (self *DiffCommands) DiffCmdObj(diffArgs []string) oscommands.ICmdObj {
 		NewGitCmd("diff").Arg("--submodule", "--no-ext-diff", "--color").Arg(diffArgs...).ToArgv(),
 	)
 }
+
+func (self *DiffCommands) DiffIndexCmdObj(diffArgs ...string) oscommands.ICmdObj {
+	return self.cmd.New(
+		NewGitCmd("diff-index").
+			Arg("--submodule", "--no-ext-diff", "--no-color", "--patch").
+			Arg(diffArgs...).ToArgv(),
+	)
+}

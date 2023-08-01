@@ -68,6 +68,7 @@ var tests = []*components.IntegrationTest{
 	commit.CommitWithPrefix,
 	commit.CreateTag,
 	commit.DiscardOldFileChange,
+	commit.FindBaseCommitForFixup,
 	commit.Highlight,
 	commit.History,
 	commit.HistoryComplex,

@@ -39,6 +39,7 @@ type TranslationSet struct {
 	SureToAmend                         string
 	NoCommitToAmend                     string
 	CommitChangesWithEditor             string
+	FindBaseCommitForFixup              string
 	StatusTitle                         string
 	GlobalTitle                         string
 	Menu                                string
@@ -835,6 +836,7 @@ func EnglishTranslationSet() TranslationSet {
 		SureToAmend:                         "Are you sure you want to amend last commit? Afterwards, you can change the commit message from the commits panel.",
 		NoCommitToAmend:                     "There's no commit to amend.",
 		CommitChangesWithEditor:             "Commit changes using git editor",
+		FindBaseCommitForFixup:              "Find base commit for fixup",
 		StatusTitle:                         "Status",
 		Menu:                                "Menu",
 		Execute:                             "Execute",
