@@ -6,6 +6,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/mattn/go-runewidth"
+	"golang.org/x/exp/slices"
 )
 
 // In this file we use the boxlayout package, along with knowledge about the app's state,
@@ -31,8 +32,6 @@ func NewWindowArrangementHelper(
 		appStatusHelper: appStatusHelper,
 	}
 }
-
-const INFO_SECTION_PADDING = " "
 
 func (self *WindowArrangementHelper) shouldUsePortraitMode(width, height int) bool {
 	switch self.c.UserConfig.Gui.PortraitMode {
@@ -183,6 +182,16 @@ func (self *WindowArrangementHelper) getMidSectionWeights() (int, int) {
 	return sideSectionWeight, mainSectionWeight
 }
 
+// Returns a box with size 1 to be used as padding before, between, or after views
+func spacerBox(window string) *boxlayout.Box {
+	return &boxlayout.Box{Window: window, Size: 1}
+}
+
+// Returns a box with weight 1 to be used as flexible padding before, between, or after views
+func flexibleSpacerBox(window string) *boxlayout.Box {
+	return &boxlayout.Box{Window: window, Weight: 1}
+}
+
 func (self *WindowArrangementHelper) infoSectionChildren(informationStr string, appStatus string) []*boxlayout.Box {
 	if self.c.State().GetRepoState().InSearchPrompt() {
 		var prefix string
@@ -192,6 +201,7 @@ func (self *WindowArrangementHelper) infoSectionChildren(informationStr string, 
 			prefix = self.c.Tr.FilterPrefix
 		}
 		return []*boxlayout.Box{
+			spacerBox("statusSpacer1"),
 			{
 				Window: "searchPrefix",
 				Size:   runewidth.StringWidth(prefix),
@@ -203,31 +213,62 @@ func (self *WindowArrangementHelper) infoSectionChildren(informationStr string, 
 		}
 	}
 
-	appStatusBox := &boxlayout.Box{Window: "appStatus"}
-	optionsBox := &boxlayout.Box{Window: "options"}
+	// First collect the real views that we want to show, we'll add spacers in
+	// between at the end
+	var result []*boxlayout.Box
 
-	if !self.c.UserConfig.Gui.ShowBottomLine {
-		optionsBox.Weight = 0
-		appStatusBox.Weight = 1
-	} else {
-		optionsBox.Weight = 1
-		if self.c.InDemo() {
-			// app status appears very briefly in demos and dislodges the caption,
-			// so better not to show it at all
-			appStatusBox.Size = 0
-		} else {
-			appStatusBox.Size = runewidth.StringWidth(INFO_SECTION_PADDING) + runewidth.StringWidth(appStatus)
+	if !self.c.InDemo() {
+		// app status appears very briefly in demos and dislodges the caption,
+		// so better not to show it at all
+		if appStatus != "" {
+			result = append(result, &boxlayout.Box{Window: "appStatus", Size: runewidth.StringWidth(appStatus)})
 		}
 	}
 
-	result := []*boxlayout.Box{appStatusBox, optionsBox}
+	if self.c.UserConfig.Gui.ShowBottomLine {
+		result = append(result, &boxlayout.Box{Window: "options", Weight: 1})
+	}
 
 	if (!self.c.InDemo() && self.c.UserConfig.Gui.ShowBottomLine) || self.modeHelper.IsAnyModeActive() {
-		result = append(result, &boxlayout.Box{
-			Window: "information",
-			// unlike appStatus, informationStr has various colors so we need to decolorise before taking the length
-			Size: runewidth.StringWidth(INFO_SECTION_PADDING) + runewidth.StringWidth(utils.Decolorise(informationStr)),
-		})
+		result = append(result,
+			&boxlayout.Box{
+				Window: "information",
+				// unlike appStatus, informationStr has various colors so we need to decolorise before taking the length
+				Size: runewidth.StringWidth(utils.Decolorise(informationStr)),
+			})
+	}
+
+	if len(result) == 3 {
+		// status - options - information
+		result = slices.Insert(result, 0, spacerBox("statusSpacer1"))
+		result = slices.Insert(result, 2, spacerBox("statusSpacer2"))
+		result = slices.Insert(result, 4, spacerBox("statusSpacer3"))
+		result = slices.Insert(result, 6, spacerBox("statusSpacer4"))
+	} else if len(result) == 2 {
+		if result[0].Window == "appStatus" {
+			// status - information
+			result = slices.Insert(result, 0, spacerBox("statusSpacer1"))
+			result = slices.Insert(result, 2, spacerBox("statusSpacer2"))
+			result = slices.Insert(result, 3, flexibleSpacerBox("statusSpacer3"))
+			result = slices.Insert(result, 5, spacerBox("statusSpacer4"))
+		} else {
+			// options - information
+			result = slices.Insert(result, 0, spacerBox("statusSpacer1"))
+			result = slices.Insert(result, 2, spacerBox("statusSpacer2"))
+			result = slices.Insert(result, 4, spacerBox("statusSpacer3"))
+		}
+	} else if len(result) == 1 {
+		if result[0].Window == "information" {
+			// information
+			result = slices.Insert(result, 0, flexibleSpacerBox("statusSpacer1"))
+			result = slices.Insert(result, 2, spacerBox("statusSpacer2"))
+		} else {
+			// status
+			result[0].Size = 0
+			result[0].Weight = 1
+			result = slices.Insert(result, 0, spacerBox("statusSpacer1"))
+			result = slices.Insert(result, 2, spacerBox("statusSpacer2"))
+		}
 	}
 
 	return result

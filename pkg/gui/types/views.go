@@ -34,6 +34,10 @@ type Views struct {
 	AppStatus         *gocui.View
 	Search            *gocui.View
 	SearchPrefix      *gocui.View
+	StatusSpacer1     *gocui.View
+	StatusSpacer2     *gocui.View
+	StatusSpacer3     *gocui.View
+	StatusSpacer4     *gocui.View
 	Limit             *gocui.View
 	Suggestions       *gocui.View
 	Tooltip           *gocui.View
