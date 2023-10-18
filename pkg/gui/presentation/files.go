@@ -31,10 +31,11 @@ func RenderFileTree(
 	diffName string,
 	submoduleConfigs []*models.SubmoduleConfig,
 ) []string {
-	return renderAux(tree.GetRoot().Raw(), tree.CollapsedPaths(), "", -1, func(node *filetree.Node[models.File], depth int) string {
+	collapsedPaths := tree.CollapsedPaths()
+	return renderAux(tree.GetRoot().Raw(), collapsedPaths, "", -1, func(node *filetree.Node[models.File], depth int) string {
 		fileNode := filetree.NewFileNode(node)
 
-		return getFileLine(fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), fileNameAtDepth(node, depth), diffName, submoduleConfigs, node.File)
+		return getFileLine(collapsedPaths, fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), fileNameAtDepth(node, depth), diffName, submoduleConfigs, node)
 	})
 }
 
@@ -43,7 +44,8 @@ func RenderCommitFileTree(
 	diffName string,
 	patchBuilder *patch.PatchBuilder,
 ) []string {
-	return renderAux(tree.GetRoot().Raw(), tree.CollapsedPaths(), "", -1, func(node *filetree.Node[models.CommitFile], depth int) string {
+	collapsedPaths := tree.CollapsedPaths()
+	return renderAux(tree.GetRoot().Raw(), collapsedPaths, "", -1, func(node *filetree.Node[models.CommitFile], depth int) string {
 		// This is a little convoluted because we're dealing with either a leaf or a non-leaf.
 		// But this code actually applies to both. If it's a leaf, the status will just
 		// be whatever status it is, but if it's a non-leaf it will determine its status
@@ -61,7 +63,7 @@ func RenderCommitFileTree(
 			status = patch.PART
 		}
 
-		return getCommitFileLine(commitFileNameAtDepth(node, depth), diffName, node.File, status)
+		return getCommitFileLine(collapsedPaths, commitFileNameAtDepth(node, depth), diffName, node, status)
 	})
 }
 
@@ -85,13 +87,13 @@ func renderAux[T any](
 		return []string{prefix + renderLine(node, depth)}
 	}
 
-	if collapsedPaths.IsCollapsed(node.GetPath()) {
-		return []string{prefix + COLLAPSED_ARROW + " " + renderLine(node, depth)}
-	}
-
 	arr := []string{}
 	if !isRoot {
-		arr = append(arr, prefix+EXPANDED_ARROW+" "+renderLine(node, depth))
+		arr = append(arr, prefix+renderLine(node, depth))
+	}
+
+	if collapsedPaths.IsCollapsed(node.GetPath()) {
+		return arr
 	}
 
 	newPrefix := prefix
@@ -119,22 +121,29 @@ func renderAux[T any](
 	return arr
 }
 
-func getFileLine(hasUnstagedChanges bool, hasStagedChanges bool, name string, diffName string, submoduleConfigs []*models.SubmoduleConfig, file *models.File) string {
-	// potentially inefficient to be instantiating these color
-	// objects with each render
-	partiallyModifiedColor := style.FgYellow
-
-	restColor := style.FgGreen
-	if name == diffName {
-		restColor = theme.DiffTerminalColor
-	} else if file == nil && hasStagedChanges && hasUnstagedChanges {
-		restColor = partiallyModifiedColor
-	} else if hasUnstagedChanges {
-		restColor = theme.UnstagedChangesColor
-	}
-
+func getFileLine(collapsedPaths *filetree.CollapsedPaths, hasUnstagedChanges bool, hasStagedChanges bool, name string, diffName string, submoduleConfigs []*models.SubmoduleConfig, node *filetree.Node[models.File]) string {
 	output := ""
-	if file != nil {
+
+	restColor := style.FgDefault
+
+	file := node.File
+
+	if file == nil {
+		arrow := EXPANDED_ARROW
+		if collapsedPaths.IsCollapsed(node.GetPath()) {
+			arrow = COLLAPSED_ARROW
+		}
+
+		var arrowStyle style.TextStyle
+		if hasStagedChanges && !hasUnstagedChanges {
+			arrowStyle = style.FgGreen
+		} else if hasStagedChanges && hasUnstagedChanges {
+			arrowStyle = style.FgYellow
+		} else {
+			arrowStyle = style.FgRed
+		}
+		output += arrowStyle.Sprint(arrow) + " "
+	} else {
 		// this is just making things look nice when the background attribute is 'reverse'
 		firstChar := file.ShortStatus[0:1]
 		firstCharCl := style.FgGreen
@@ -174,28 +183,36 @@ func getFileLine(hasUnstagedChanges bool, hasStagedChanges bool, name string, di
 	return output
 }
 
-func getCommitFileLine(name string, diffName string, commitFile *models.CommitFile, status patch.PatchStatus) string {
-	var colour style.TextStyle
-	if diffName == name {
-		colour = theme.DiffTerminalColor
-	} else {
-		switch status {
-		case patch.WHOLE:
-			colour = style.FgGreen
-		case patch.PART:
-			colour = style.FgYellow
-		case patch.UNSELECTED:
-			colour = theme.DefaultTextColor
-		}
-	}
-
+func getCommitFileLine(collapsedPaths *filetree.CollapsedPaths, name string, diffName string, node *filetree.Node[models.CommitFile], status patch.PatchStatus) string {
+	commitFile := node.File
 	output := ""
 
-	name = utils.EscapeSpecialChars(name)
-	if commitFile != nil {
+	if commitFile == nil {
+		arrow := EXPANDED_ARROW
+		if collapsedPaths.IsCollapsed(node.GetPath()) {
+			arrow = COLLAPSED_ARROW
+		}
+
+		var arrowColour style.TextStyle
+		if diffName == name {
+			arrowColour = theme.DiffTerminalColor
+		} else {
+			switch status {
+			case patch.WHOLE:
+				arrowColour = style.FgGreen
+			case patch.PART:
+				arrowColour = style.FgYellow
+			case patch.UNSELECTED:
+				arrowColour = theme.DefaultTextColor
+			}
+		}
+
+		output += arrowColour.Sprint(arrow) + " "
+	} else {
 		output += getColorForChangeStatus(commitFile.ChangeStatus).Sprint(commitFile.ChangeStatus) + " "
 	}
 
+	name = utils.EscapeSpecialChars(name)
 	isSubmodule := false
 	isLinkedWorktree := false
 	isDirectory := commitFile == nil
@@ -206,7 +223,7 @@ func getCommitFileLine(name string, diffName string, commitFile *models.CommitFi
 		output += paint.Sprint(icon.Icon) + " "
 	}
 
-	output += colour.Sprint(name)
+	output += style.FgDefault.Sprint(name)
 	return output
 }
 
