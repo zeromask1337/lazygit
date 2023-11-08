@@ -25,7 +25,7 @@ press shift-F (for "Create fixup commit for this commit"). This automatically
 creates a commit with the appropriate subject line.
 
 Don't confuse this with the lowercase "f" command ("Fixup commit"); that one
-squashes the selected command into its parent, this is not what we want here.
+squashes the selected commit into its parent, this is not what we want here.
 
 ## Squashing fixup commits
 
