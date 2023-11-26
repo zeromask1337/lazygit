@@ -35,6 +35,10 @@ func NewWindowArrangementHelper(
 const INFO_SECTION_PADDING = " "
 
 func (self *WindowArrangementHelper) shouldUsePortraitMode(width, height int) bool {
+	if self.c.State().GetRepoState().GetScreenMode() == types.SCREEN_HALF {
+		return self.c.UserConfig.Gui.HalfScreenSplitMode == "vertical"
+	}
+
 	switch self.c.UserConfig.Gui.PortraitMode {
 	case "never":
 		return false
@@ -174,7 +178,11 @@ func (self *WindowArrangementHelper) getMidSectionWeights() (int, int) {
 		}
 	} else {
 		if screenMode == types.SCREEN_HALF {
-			mainSectionWeight = 1
+			if self.c.UserConfig.Gui.HalfScreenSplitMode == "vertical" {
+				mainSectionWeight = 2
+			} else {
+				mainSectionWeight = 1
+			}
 		} else if screenMode == types.SCREEN_FULL {
 			mainSectionWeight = 0
 		}
