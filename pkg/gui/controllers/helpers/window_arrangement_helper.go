@@ -266,8 +266,8 @@ func infoSectionChildren(args WindowArrangementArgs) []*boxlayout.Box {
 
 	statusSpacerPrefix := "statusSpacer"
 	spacerBoxIndex := 0
-	maxSpacerBoxIndex := 4 // See pkg/gui/types/views.go
-	// Returns a box with size 1 to be used as padding before, between, or after views
+	maxSpacerBoxIndex := 2 // See pkg/gui/types/views.go
+	// Returns a box with size 1 to be used as padding between views
 	spacerBox := func() *boxlayout.Box {
 		spacerBoxIndex++
 
@@ -278,7 +278,7 @@ func infoSectionChildren(args WindowArrangementArgs) []*boxlayout.Box {
 		return &boxlayout.Box{Window: fmt.Sprintf("%s%d", statusSpacerPrefix, spacerBoxIndex), Size: 1}
 	}
 
-	// Returns a box with weight 1 to be used as flexible padding before, between, or after views
+	// Returns a box with weight 1 to be used as flexible padding between views
 	flexibleSpacerBox := func() *boxlayout.Box {
 		spacerBoxIndex++
 
@@ -327,9 +327,11 @@ func infoSectionChildren(args WindowArrangementArgs) []*boxlayout.Box {
 
 	if len(result) == 2 && result[0].Window == "appStatus" {
 		// Only status and information are showing; need to insert a flexible
-		// spacer after the 1-width spacer between the two, so that information
-		// is right-aligned
-
+		// spacer between the two, so that information is right-aligned. Note
+		// that the call to insertSpacerBoxes below will still insert a 1-char
+		// spacer in addition (right after the flexible one); this is needed for
+		// the case that there's not enough room, to ensure there's always at
+		// least one space.
 		result = slices.Insert(result, 1, flexibleSpacerBox())
 	} else if len(result) == 1 {
 		if result[0].Window == "information" {

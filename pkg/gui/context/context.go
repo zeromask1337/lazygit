@@ -38,8 +38,6 @@ const (
 	LIMIT_CONTEXT_KEY          types.ContextKey = "limit"
 	STATUS_SPACER1_CONTEXT_KEY types.ContextKey = "statusSpacer1"
 	STATUS_SPACER2_CONTEXT_KEY types.ContextKey = "statusSpacer2"
-	STATUS_SPACER3_CONTEXT_KEY types.ContextKey = "statusSpacer3"
-	STATUS_SPACER4_CONTEXT_KEY types.ContextKey = "statusSpacer4"
 
 	MENU_CONTEXT_KEY               types.ContextKey = "menu"
 	CONFIRMATION_CONTEXT_KEY       types.ContextKey = "confirmation"
@@ -121,8 +119,6 @@ type ContextTree struct {
 	Limit         types.Context
 	StatusSpacer1 types.Context
 	StatusSpacer2 types.Context
-	StatusSpacer3 types.Context
-	StatusSpacer4 types.Context
 }
 
 // the order of this decides which context is initially at the top of its window
@@ -166,8 +162,6 @@ func (self *ContextTree) Flatten() []types.Context {
 		self.Limit,
 		self.StatusSpacer1,
 		self.StatusSpacer2,
-		self.StatusSpacer3,
-		self.StatusSpacer4,
 	}
 }
 
