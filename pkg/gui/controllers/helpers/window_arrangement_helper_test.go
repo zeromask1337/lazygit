@@ -179,6 +179,48 @@ func TestGetWindowDimensions(t *testing.T) {
 			<appStatus────────────────────────────────────────────────────────────────>
 			`,
 		},
+		{
+			name: "app status present with information but without options",
+			mutateArgs: func(args *WindowArrangementArgs) {
+				args.Height = 6                            // small height cos we only care about the bottom line
+				args.UserConfig.Gui.ShowBottomLine = false // this hides the options window
+				args.IsAnyModeActive = true
+				args.AppStatus = "Rebasing /"
+			},
+			expected: `
+			<status─────────────────>╭main────────────────────────────────────────────╮
+			<files──────────────────>│                                                │
+			<branches───────────────>│                                                │
+			<commits────────────────>│                                                │
+			<stash──────────────────>╰────────────────────────────────────────────────╯
+			<A───────><statusSpacer1──────────────────────────────────────>B<C────────>
+			A: appStatus
+			B: statusSpacer2
+			C: information
+			`,
+		},
+		{
+			name: "app status present with very long information but without options",
+			mutateArgs: func(args *WindowArrangementArgs) {
+				args.Height = 6                            // small height cos we only care about the bottom line
+				args.Width = 55                            // smaller width so that not all bottom line views fit
+				args.UserConfig.Gui.ShowBottomLine = false // this hides the options window
+				args.IsAnyModeActive = true
+				args.AppStatus = "Rebasing /"
+				args.InformationStr = "Showing output for: git diff deadbeef fa1afe1 -- (Reset)"
+			},
+			expected: `
+			<status───────────>╭main──────────────────────────────╮
+			<files────────────>│                                  │
+			<branches─────────>│                                  │
+			<commits──────────>│                                  │
+			<stash────────────>╰──────────────────────────────────╯
+			<A───────>C<information──────────────────────────────────────────>
+			A: appStatus
+			B: statusSpacer1
+			C: statusSpacer2
+			`,
+		},
 	}
 
 	for _, test := range tests {
